@@ -12,9 +12,16 @@
   * Docker Desktop을 설치한 이후, 실행하여 환경설정에 들어갑니다
   * Resouces->Advanced로 들어가 본인 mac 사양에 맞춰 설정합니다.
   * 터미널 실행 후 도커 버전을 확인합니다
-  * ```$docker --version```
+  * ```shell
+    $ docker --version```
 
 * 지금부턴 xv6를 실행해보겠습니다. 먼저 xv6 파일을 다운받아줍니다.
+  * https://drive.google.com/file/d/1sEqKz-LOMOUe2c7LtHclIjDbmyGv8Han/view?usp=drive_link
+  * 다음 사이트로 들어가 .tar파일을 다운받아 줍니다.
+  * 원하는 디렉토리에 .tar파일을 옮겨줍니다
+  * ```shell
+    $ mv ./os_xv6.tar /User/gyungtaemun/Desktop/xv6```
+* 옮긴 뒤, 자기가 옮긴 디렉토리로 들어갑니다.
   * 
 
 
