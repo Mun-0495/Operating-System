@@ -64,7 +64,7 @@
       $ make fs.img
       $ ./bootxv6.sh
 
-<hr1>
+***
 
 ## CODE
 ### 실제로 제출되는 코드가 존재합니다.
