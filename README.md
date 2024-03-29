@@ -51,9 +51,19 @@
 * 이때, 마지막 명령어가 매번 타이핑이 귀찮기 때문에 shell파일을 만들어 단축시켜봅시다.
    * ```shell
       $ vi bootxv6.sh
+   * 파일을 만든 후 i를 눌러 다음을 붙여넣으면 됩니다.
    * ```sh
       #!/bin/bash
       qemu-system-i386 –nographic –serial mon:stdio –hdb fs.img xv6.img –smp 1 –m 512
+   * 파일을 저장한 후, 다음을 입력하여 권한을 변경시켜 줍니다.
+   * ```shell
+      $ chmod +x bootxv6.sh
+   * 이제 xv6를 실행할 때 다음과 같이 실행하면 됩니다.
+   * ```sh
+      $ make
+      $ make fs.img
+      $ ./bootxv6.sh
+
 <hr1>
 
 ## CODE
