@@ -12,7 +12,7 @@
   * Docker Desktop을 설치한 이후, 실행하여 환경설정에 들어갑니다
   * Resouces->Advanced로 들어가 본인 mac 사양에 맞춰 설정합니다.
   * 터미널 실행 후 도커 버전을 확인합니다
-  > ```$docker --version```
+  * ```$docker --version```
 *
 
 
