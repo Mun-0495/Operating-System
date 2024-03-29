@@ -22,7 +22,12 @@
   * ```shell
     $ mv ./os_xv6.tar /User/gyungtaemun/Desktop/xv6
 * 옮긴 뒤, 자기가 옮긴 디렉토리로 들어갑니다.
-  * 
+  * ```shell
+    $ docker load -i os_xv6.tar
+    $ docker images
+  * 순서대로 입력하고, 성공적으로 이미지가 업로드 되었다면 다음과 같은 이미지 파일이 뜨게 될겁니다.
+  * (이미지 파일 업로드 예정)
+* 
 
 
 <hr1>
