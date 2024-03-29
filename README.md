@@ -27,9 +27,33 @@
     $ docker images
   * 순서대로 입력하고, 성공적으로 이미지가 업로드 되었다면 다음과 같은 이미지 파일이 뜨게 될겁니다.
   * (이미지 파일 업로드 예정)
-* 
+* 이제 성공적으로 container가 실행되었는지 확인합니다
+ * ```shell
+    $ docker run -it --name ele3021 os_xv6
+    (실행화면) root@xxx: /OS# exit
+    $ docker ps -a
+* 만약 container가 완전히 꺼져있다면 다시 실행시킵니다.
+ * ```shell
+    $ docker start ele3021
+    $ docker attach ele3021
+* 만약 container가 켜져있다면 attach만 시킵니다.
+  * ```shell
+     $ docker attach ele3021
 
+* 이제 xv6를 실행시켜 봅시다
+  * ```shell
+     $ cd xv6-public
+     $ make
+     $ make fs.img
+     $ qemu-system-i386 –nographic –serial mon:stdio –hdb fs.img xv6.img –smp 1 –m 512
 
+* 정상적으로 되었다면 이제 xv6가 실행될 것입니다.
+* 이때, 마지막 명령어가 매번 타이핑이 귀찮기 때문에 shell파일을 만들어 단축시켜봅시다.
+   * ```shell
+      $ vi bootxv6.sh
+   * ```sh
+      #!/bin/bash
+      qemu-system-i386 –nographic –serial mon:stdio –hdb fs.img xv6.img –smp 1 –m 512
 <hr1>
 
 ## CODE
