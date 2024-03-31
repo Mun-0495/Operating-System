@@ -1,8 +1,10 @@
+---
+marp : true
+---
+
 # Project01 - Make gpid Systemcall
 
 ## 첫 번째 프로젝트입니다. 크게 4 부분으로 나뉘고, 각각의 단계에 대해서 기술해놓았습니다.
-
-***
 
 * Design
   * 명세에서 요구하는 조건에 대한 구현 계획을 서술하고 있습니다.
@@ -13,7 +15,8 @@
 * Trouble shooting
   * 과제 수행 과정에서 겪은 문제와, 해당 문제와 해결 과정을 서술하고 있습니다.
  
-***
+
+---
 
 ### Design
 
@@ -49,8 +52,7 @@
   * 그럼 myproc()함수로 내 프로세스를 불러온 다음, myproc()->parent->parent가 내 조부모의 process고 여기서 ->pid를 한다면 내 조부모의 pid를 얻을 수 있겠군요!
   * 자 이제 그럼 구현만 하면 끝날 것 같습니다!
     
- 
-***
+---
 
 ### Implement
 
@@ -102,7 +104,7 @@
      $ make fs.img
   * 오류가 나지 않고 성공적으로 make가 된다면 이제 모두 끝입니다!
 
-***
+---
 
 ### Result
 * 이제 구현이 끝났습니다!
@@ -119,7 +121,7 @@
   * ![getpid18](../img/Project1/xv6.png)
 
 
-***
+---
 
 ### Trouble shooting.
 
@@ -137,3 +139,5 @@
 * ![error01](../img/Project1/header_modify.png)
 * 오류를 해결한 모습입니다.
 * ![error01](../img/Project1/error_complete.png)
+
+---
