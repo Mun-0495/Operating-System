@@ -23,16 +23,16 @@
 * xv6의 파일 내부는 다음과 같이 이루어져 있습니다.
   * ```shell
      $ ls
-  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_ls.png" width="40%" height="30%" title="1"></img>
+  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_ls.jpg" width="40%" height="30%" title="1"></img>
 * 자, 이제 xv6의 파일 내부에서 syscall.h를 열어봅시다. 이 파일안엔 xv6 내부에서 쓸 수 있는 시스템콜이 내장되어 있을 겁니다.
   * ```shell
      $ vim syscall.h
-  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_syscall.png" width="40%" height="30%" title="2"></img>
+  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_syscall.jpg" width="40%" height="30%" title="2"></img>
   * 확인해보니, 현재 프로세스 아이디를 불러올 수 있는 getpid()라는 시스템콜이 이미 구현되어있는걸 확인할 수 있습니다.
   * getpid()함수를 통해 gpid를 구현할 수 있을테니, 저희는 이전에 깔았던 cscope를 활용하여 getpid()가 어디서 호출되어 있고, 어떻게 구현되어 있는지 확인해 봅시다.
 * vim의 Command모드에서 **:cs find c getpid** 를 입력해 getpid()함수가 어디서 호출되어있는지 확인해보고, **:cs find s getpid** 를 입력해 getpid가 어디서 심볼로 확인되어있는지 확인해 봅시다.
-  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_cscope_getpid.png" width="40%" height="30%" title="3"></img>
+  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_cscope_getpid.jpg" width="40%" height="30%" title="3"></img>
   * 확인해보니, getpid는 user.h안에서 함수를 호출하고 있고, user.h는 다양한 곳에서 호출되고 있습니다. 자 일단, syscall.h안에 getpid가 있으니, syscall.h를 include 하고 함수를 찾아봅시다
-  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_cscope_syscall.png" width="40%" height="30%" title="4"></img>
+  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_cscope_syscall.jpg" width="40%" height="30%" title="4"></img>
   * syscall.c에서 syscall.h를 호출하고 있군요. 자, 그럼 syscall.c를 살펴봅시다.
-  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_vim_syscall.png" width="40%" height="30%" title="5"></img>
+  * <img src="/Users/gyungtaemun/Desktop/Operating-System/img/Project1/xv6_vim_syscall.jpg" width="40%" height="30%" title="5"></img>
