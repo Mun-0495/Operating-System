@@ -21,4 +21,4 @@
 * gpid 시스템 콜은 현재 프로세스의 부모의 부모, 즉 조부모의 pid를 호출하는 시스템 콜입니다.
 * 이 시스템콜을 구현하기 전에, 먼저 xv6의 시스템 콜엔 어떤게 있는지 살펴봅시다.
 * xv6의 파일 내부는 다음과 같이 이루어져 있습니다.
-* <img src="/Users/gyungtaemun/Desktop/Operating-System/img/xv6_ls.png" width="40%" height="30%" title="xv6" alt="xv6"></img>
+* <img src="/Users/gyungtaemun/Desktop/Operating-System/img/xv6_ls.png" width="40%" height="30%" title="xv6"></img>
