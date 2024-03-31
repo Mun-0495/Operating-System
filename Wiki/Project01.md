@@ -110,9 +110,30 @@
   * ![getpid15](../img/Project1/xv6_make1.png)
   * ![getpid16](../img/Project1/xv6_make2.png)
   * ![getpid17](../img/Project1/xv6_make3.png)
-* 이제 xv6를 켜봅시다
+* 이제 xv6를 켜봅시다.
   * ```shell
      $ ./bootxv6.sh
+  * ```shell
+     $ project01
+  * 다음과 같이 실행된다면 성공적으로 만들어진 것 입니다!
   * ![getpid18](../img/Project1/xv6.png)
 
 
+***
+
+### Trouble shooting.
+
+* 개인적으로 힘들었던 점은 역시 **cscope**사용법이었습니다.
+* 자주 쓰던 방법이 아니니 좀 어려웠네요. 하지만 실습과제와 구글링을 통해 해결했습니다.
+* 특히 **:cs find s ~, :cs find c ~, :cs find d ~**방법이 꽤나 좋았습니다.
+* 이 화면만 질리게 봤습니다.
+* ![error01](../img/Project1/cscope_error.png)
+
+* 두 번째로 힘들었던 점은 헤더 파일이었습니다
+* 헤더 파일이 순서가 꼬여서 자꾸 에러가 났었습니다.
+* 여기 고치는데 꽤나 많은 시간을 썼습니다.
+* ![error01](../img/Project1/header_error.png)
+* cscope를 이용해 ts가 어디있는지 보고, 헤더 파일의 위치를 수정하여 해결하였습니다.
+* ![error01](../img/Project1/header_modify.png)
+* 오류를 해결한 모습입니다.
+* ![error01](../img/Project1/error_complete.png)
