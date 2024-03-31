@@ -36,3 +36,83 @@
   * ![getpid2](../img/Project1/xv6_cscope_syscall.jpg)
   * syscall.c에서 syscall.h를 호출하고 있군요. 자, 그럼 syscall.c를 살펴봅시다.
   * ![getpid3](../img/Project1/xv6_vim_syscall.jpg)
+  * 맨 끝의 함수에서, pid라는 변수를 사용하는걸 볼 수 있고, 이 pid가 저희가 알고있는 process id가 되겠군요. 이 함수를 본격적으로 분석해봅시다.
+* pid는 curproc라는 구조체에서 가져오고, 이 curproc는 myproc()이라는 함수를 통해 값을 받고 있습니다. 그럼, 이 myproc()함수를 뜯어보면 되겠군요.
+* **:cs find d myproc**으로 검색하면 myproc()은 proc.c라는 함수 안에 있음을 알 수 있습니다.
+  * ![getpid4](../img/Project1/xv6_cscope_myproc.png)
+  * 자 그럼, proc.c를 들어가봅시다. myproc()은 함수고, 여기서 proc라는 구조체를 사용하고 있군요. myproc는 포인터 구조체를 반환하고 있습니다. 그럼 이 proc라는 구조체를 분석하면 답을 얻을 수 있을 듯 합니다.
+  * **:cs find g proc**으로 검색해보면, proc구조체는 proc.h라는 파일 안에 정의되어 있습니다.
+  * ![getpid4](../img/Project1/xv6_cscope_proc.png)
+  * 그럼, proc.h라는 파일 안을 들어가보면 되겠습니다. vim으로 proc.h를 켜봅시다.
+  * ![getpid5](../img/Project1/xv6_vim_proc.png)
+  * proc구조체를 뜯어봅시다. proc구조체 안에 pid가 존재하고, 여기서 parent process구조체를 불러올 수 있겠군요.
+  * 그럼 myproc()함수로 내 프로세스를 불러온 다음, myproc()->parent->parent가 내 조부모의 process고 여기서 ->pid를 한다면 내 조부모의 pid를 얻을 수 있겠군요!
+  * 자 이제 그럼 구현만 하면 끝날 것 같습니다!
+    
+ 
+***
+
+### Implement
+
+* Design이 끝났으니, 이제 구현만 하면 됩니다.
+* 파일 이름은 gpid.c로 하면 될 것 같고, 이건 Project01로 불러오는 것이니 project01.c라는 파일도 필요하겠군요.
+* gpid.c를 먼저 만들어 봅시다
+  * 아까 Design대로, myproc()->parent->parent->pid만 하면 끝나겠군요.
+  * 헤더파일을 잘 불러오는게 중요할 것 같습니다.
+  * ```c
+     int gpid() {
+       int pid = myproc()->parent->parent->pid;
+       return p;
+     }
+  * gpid구현은 이걸로 끝입니다. 다만 나의 Wrapper function이 필요할 것 같습니다. 실습에서 따라해본 대로 Wrapper function을 만들어 봅시다.
+  * ```c
+     //Wrapper function for my gpid
+     int sys_gpid(void) {
+       int pid = myproc()->pid;
+       if(pid < 0)
+         return -1;
+       return gpid();
+    }
+  * ![getpid6](../img/Project1/xv6_vim_gpid.png)
+* 자, Wrapper function까지 끝났습니다. 이제 설정 파일만 추가하면 되겠군요.
+  * 먼저 Makefile를 열어봅시다
+  * Makefile의 OBJS 밑에 저희의 시스템 콜을 넣읍시다.
+  * ![getpid7](../img/Project1/Makefile1.png)
+  * ```shell
+     $ make clean
+     $ make | grep gpid
+  * 여기까지 끝냈다면 성공적으로 make를 해, gpid.o파일이 생겼을 겁니다.
+  * 그 다음, defs.h, syscall.h, syscall.c에 저희의 gpid 시스템 콜을 추가해 줍시다
+  * ![getpid8](../img/Project1/Makefile2.png)
+  * ![getpid9](../img/Project1/Makefile3.png)
+  * ![getpid10](../img/Project1/Makefile4.png)
+  * 마지막으로 user.h 와 usys.S에 설정을 추가해주면 끝납니다.
+  * ![getpid11](../img/Project1/Makefile5.png)
+  * ![getpid12](../img/Project1/Makefile6.png)
+ 
+* 이제 project01.c 파일만 만들어 저희의 앱으로 만들면 되겠네요!
+  * project01.c를 다음과 같이 만들어 줍시다
+  * ![getpid13](../img/Project1/xv6_project01.png)
+  * 마지막으로 Makefile에 설정만 추가해봅시다!
+  * ![getpid14](../img/Project1/Makefile7.png)
+  * 마지막으로 make만 해줍시다!
+  * ```shell
+     $ make clean
+     $ make
+     $ make fs.img
+  * 오류가 나지 않고 성공적으로 make가 된다면 이제 모두 끝입니다!
+
+***
+
+### Result
+* 이제 구현이 끝났습니다!
+* 실행이 잘 되는지 확인해보겠습니다.
+  * ![getpid15](../img/Project1/xv6_make1.png)
+  * ![getpid16](../img/Project1/xv6_make2.png)
+  * ![getpid17](../img/Project1/xv6_make3.png)
+* 이제 xv6를 켜봅시다
+  * ```shell
+     $ ./bootxv6.sh
+  * ![getpid18](../img/Project1/xv6.png)
+
+
