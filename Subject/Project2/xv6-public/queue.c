@@ -11,10 +11,12 @@
 extern uint ticks;
 
 queue* queue_init(struct queue* q, int level) {
-    q->time_quantuam = 2 * (level+1);
-    q->front = q->rear = (void*)0;
-    q->size = 0;
+    queue* init_queue = (struct queue*)kalloc();
+    init_queue->time_quantuam = 2 * (level+1);
+    init_queue->front = init_queue->rear = (void*)0;
+    init_queue->size = 0;
 
+    q = init_queue;
     return q;
 }
 
@@ -24,21 +26,21 @@ int isempty(queue* q) {
     return 0;
 }
 
-struct proc* front(queue* q) {
-    return q->front;
-}
+// struct proc* front(queue* q) {
+//     return q->front;
+// }
 
-struct proc* find_previous_process(queue* q, struct proc* p) {
-    struct proc* prev = q->front;
-    struct proc* curr = q->front->next;
+// struct proc* find_previous_process(queue* q, struct proc* p) {
+//     struct proc* prev = q->front;
+//     struct proc* curr = q->front->next;
 
-    while(curr != p) {
-        prev = curr;
-        curr = curr->next;
-    }
+//     while(curr != p) {
+//         prev = curr;
+//         curr = curr->next;
+//     }
 
-    return prev;
-}
+//     return prev;
+// }
 
 struct proc* find_process(queue* q, struct proc* p) {
     struct proc* curr = q->front;
@@ -52,49 +54,25 @@ struct proc* find_process(queue* q, struct proc* p) {
     return curr;
 }
 
+struct proc* find_process_pid(queue* q, int pid) {
+    struct proc* p;
+    for(p = q->front; p != q->rear; p = p->next) {
+        if(p->pid == pid) return p;
+    }
+    if(p->pid == pid) return p;
+    
+    return (void*)0;
+}
+
 struct proc* pop(queue* q) {
-    struct proc* pop_proc = q->front;
-    q->front->tick--;
+    struct proc* proc = q->front;
     q->front = q->front->next;
     q->size--;
 
-    return pop_proc;
+    return proc;
 }
 
-void unlink_proc(queue* q, struct proc* p) {
-    if(q->size == 0) {
-        panic("there is no process in queue\n");
-    }
-    
-    if(q->size == 1) {
-        q->front = q->rear = (void*)0;
-        q->size = 0;
-        return;
-    }
-
-    //TODO : find process
-    //find process
-    struct proc* prev= find_previous_process(q, p);
-    struct proc* curr = prev->next;
-
-    if(curr == q->front) {
-        q->front = curr->next;
-        q->rear->next = q->front;
-    } 
-
-    else if(curr == q->rear) {
-        q->rear = prev;
-        q->rear->next = q->front;
-    } 
-
-    else prev->next = curr->next;
-
-    q->size--;
-
-    return;
-}
-
-void push(queue* q, struct proc* p, int time_quantuam) {
+void push(queue* q, struct proc* p) {
     q->size++;
     p->level = (q->time_quantuam) / 2 - 1;
     if (isempty(q)) {
@@ -143,7 +121,8 @@ void clear(struct queue* q, struct proc* p) {
 }
 
 void set_clear(struct queue* q) {
-    
+    q->front = q->rear = (void*)0;
+    q->size = 0;
 }
 
 /**
@@ -151,11 +130,9 @@ void set_clear(struct queue* q) {
  * @param pq Process priority queue.
  * @return [struct proc*] First element of current priority queue.
  */
-struct proc*
-top_pri_proc(queue* pq)
-{
+struct proc* top_pri_proc(queue* pq) {
     struct proc* ret = (void*)0;
-    for (int pri = 0; pri <= 9; ++pri) {
+    for (int pri = 0; pri <= 10; ++pri) {
         struct proc* p = front(pq);
         while (1) {
             if (p->priority == pri) {

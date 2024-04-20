@@ -80,7 +80,7 @@
 ### 자세한 내용은 위키를 참조하시면 되겠습니다.
 
 * 프로젝트는 총 4개입니다
-  * Project01
+  * [Project01](https://github.com/Mun-0495/Operating-System/blob/main/Wiki/Project01.md)
   * Project02
   * Project03
   * Project04

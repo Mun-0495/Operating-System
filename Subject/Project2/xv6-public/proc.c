@@ -6,6 +6,8 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "queue.h"
+#include "mlfq.h"
 
 #define L0 0
 #define L1 1
@@ -27,7 +29,7 @@ struct {
 static struct proc *initproc;
 
 int nextpid = 1;
-int monopolize_queue = 0;
+int monopolize_set = 0;
 
 extern uint ticks;
 extern void forkret(void);
@@ -93,16 +95,24 @@ allocproc(void)
 
   acquire(&ptable.lock);
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
     if(p->state == UNUSED)
       goto found;
-
+    if(p->state == RUNNABLE && p->tick == 0) {
+        mlfq_push(ptable.mlfq, p, L0);
+    }
+  }
   release(&ptable.lock);
   return 0;
 
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
+
+  //add for tick, priority, level.
+  p->tick = 0;
+  p->priority = 0;
+  p->level = L0;
 
   release(&ptable.lock);
 
@@ -348,10 +358,19 @@ scheduler(void)
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
 
-    
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
+    if(ticks == 100) {
+      mlfq_boost(ptable.mlfq);
+    }
+
+    if(monopolize_set == 0) p = mlfq_pop(ptable.mlfq);
+    else {
+
+    }
+
+    if(p->state == RUNNABLE) {
+    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    //   if(p->state != RUNNABLE)
+    //     continue;
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -366,9 +385,17 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
-    }
-    release(&ptable.lock);
 
+    }
+
+    ++p->tick;
+    if(p->tick >= ptable.mlfq->queue[p->level]->time_quantuam) {
+      down_queue(ptable.mlfq, p->level);
+    }
+
+    //yield() => p->state == RUNNABLE;
+    mlfq_push(ptable.mlfq, p, p->level);
+    release(&ptable.lock);
   }
 }
 
@@ -404,6 +431,9 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
+  // if(myproc()->tick < ptable.mlfq->queue[L0]->time_quantuam) {
+  //   mlfq_push(ptable.mlfq, myproc(), L0);
+  // }
   sched();
   release(&ptable.lock);
 }
@@ -414,9 +444,16 @@ int getlev(void) {
 }
 
 int setpriority(int pid, int priority) {
-  if(pid == 1) {
-    priority = 1;
+  struct proc* p = (void*)0;
+  for(int i=0; i<3; i++) {
+    p = find_process_pid(ptable.mlfq->queue[i], pid);
+    if(p != (void*)0) break;
   }
+  if(p == (void*)0) return -1;
+  
+  p->priority = priority;
+  if(priority > 10 || priority < 0) return -2;
+  
   return 0;
 }
 
@@ -425,11 +462,11 @@ int setpriority(int pid, int priority) {
 // }
 
 void monopolize() {
-  monopolize_queue = 1;
+  monopolize_set = 1;
 }
 
 void unmonopolize() {
-  monopolize_queue = 0;
+  monopolize_set = 0;
   ticks = 0;
 }
 
