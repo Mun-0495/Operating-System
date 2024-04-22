@@ -75,18 +75,20 @@ struct proc* find_process_pid(queue* q, int pid) {
 struct proc* pop(queue* q) {
     struct proc* proc = q->front;
     q->front = q->front->next;
+    q->rear->next = q->front;
     q->size--;
 
     return proc;
 }
 
 void push(queue* q, struct proc* p) {
-
     p->level = (q->time_quantuam) / 2 - 1;
-    if(q->time_quantuam == 99) p->level = 99;
+    if(q->time_quantuam == 99) p->level = 99; //MoQ
+
     if (isempty(q)) {
         q->front = q->rear = p;
         p->next = p;
+        q->size++;
         return;
     }
     q->rear->next = p;
@@ -143,7 +145,7 @@ struct proc* pop_targetproc(queue* q, struct proc* p) {
  */
 struct proc* top_pri_proc(queue* pq) {
     struct proc* ret = (void*)0;
-    for (int pri = 0; pri <= 10; ++pri) {
+    for (int pri = 10; pri >= 0; pri--) {
         struct proc* p = front(pq);
         while (1) {
             if (p->priority == pri) {

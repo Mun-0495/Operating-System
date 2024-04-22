@@ -24,6 +24,7 @@ static struct proc *initproc;
 struct mlfq* q;
 struct queue* MoQ;
 
+extern uint ticks;
 int nextpid = 1;
 int monopolize_set = 0;
 extern void forkret(void);
@@ -103,7 +104,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-  p->priority = 10;
+  p->priority = 0;
   p->tick = 0;
 
   release(&ptable.lock);
@@ -167,6 +168,7 @@ userinit(void)
 
   p->state = RUNNABLE;
   mlfq_push(q, p, L0);
+  cprintf("L0 queue size %d\n", q->queue[L0]->size);
 
   release(&ptable.lock);
 }
@@ -343,6 +345,7 @@ scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
+  int flag = 0;
   c->proc = 0;
   
   for(;;){
@@ -351,36 +354,90 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    if(monopolize_set == 1) {
+      p = pop(MoQ);
+
+      if(p->state == RUNNABLE) {      
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      if(p->state == RUNNABLE || p->state == SLEEPING) push(MoQ, p);
+    }  
     
-    if(ticks == 100) {
-      mlfq_boost(q);
+    else {
+      flag = 0;
+      if(ticks >= 100) {
+        mlfq_boost(q);
+        ticks = 0;
+      }
+
+      p = mlfq_pop(q);
+      if(p == (void*)0) {
+        release(&ptable.lock);
+        continue;
+      }
+      cprintf("%d\n", p);
+      //cprintf("now process level : %d\n", p->level);
+      if(p->state == RUNNABLE) { 
+        cprintf("%d\n", p->pid);    
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
+
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
+
+          // Process is done running for now.
+          // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+      
+      p->tick++;
+      if(p->tick >= q->queue[p->level]->time_quantuam) {
+        p->tick = 0;
+        flag = 1;
+      }
+
+      if(!flag) {
+        if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
+      }
+
+      if(flag) {
+        if(p->level == L0) {
+          if(p->pid % 2 == 1) {
+            p->level = L1;
+            if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
+          }
+          else {
+            p->level = L2;
+            if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
+          }
+        }
+        else if(p->level == L1 || p->level == L2) {
+          p->level = L3;
+          if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
+        }
+        else {
+          if(p->priority > 0) p->priority--;
+          if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
+        }
+      }
     }
-
-    p = mlfq_pop(q);
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-    c->proc = p;
-    switchuvm(p);
-    p->state = RUNNING;
-
-    swtch(&(c->scheduler), p->context);
-    switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-    c->proc = 0;
-    
-    ++p->tick;
-    if(p->tick > q->queue[p->level]->time_quantuam) {
-      down_queue(q, p->level);
-      p->tick = 0;
-    }
-    if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
-
     release(&ptable.lock);
-
   }
 }
 
@@ -449,6 +506,7 @@ void monopolize() {
 
 void unmonopolize() {
   monopolize_set = 0;
+  ticks = 0;
 }
 
 // Give up the CPU for one scheduling round.

@@ -18,5 +18,3 @@ struct proc* mlfq_pop_targetproc(mlfq* mlfq, struct proc* proc);
 struct proc* mlfq_pop(struct mlfq* mlfq);
 
 void mlfq_boost(mlfq* mlfq);
-
-void down_queue(mlfq* mlfq, int level);
