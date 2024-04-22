@@ -1,3 +1,4 @@
+
 OBJS = \
 	bio.o\
 	console.o\
@@ -27,10 +28,10 @@ OBJS = \
 	uart.o\
 	vectors.o\
 	vm.o\
-	prac_syscall.o\
-	gpid.o\
 	mlfq.o\
 	queue.o\
+	sys_mlfq.o\
+	sys_monopoly.o\
 
 # Cross-compiling (e.g., on Mac OS X)
 # TOOLPREFIX = i386-jos-elf
@@ -184,8 +185,7 @@ UPROGS=\
 	_stressfs\
 	_wc\
 	_zombie\
-	_my_userapp\
-	_project01\
+	_project02\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
@@ -255,7 +255,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c wc.c zombie.c\
-	printf.c umalloc.c my_userapp.c project01.c\
+	printf.c umalloc.c project02.c\
 	README dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 

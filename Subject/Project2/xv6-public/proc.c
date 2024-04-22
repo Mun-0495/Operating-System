@@ -13,25 +13,19 @@
 #define L1 1
 #define L2 2
 #define L3 3
+#define MoQ_level 99
 
 struct {
   struct spinlock lock;
-  struct proc proc[NPROC]; //이거 걍 프로세스 개수 아님?
-
-  // int l0[NPROC];
-  // int l1[NPROC];
-  // int l2[NPROC];
-  // int l3[NPROC];
-  // int MoQ[NPROC];
-  struct mlfq* mlfq;  //multi_level_feedback_queue
+  struct proc proc[NPROC];
 } ptable;
 
 static struct proc *initproc;
+struct mlfq* q;
+struct queue* MoQ;
 
 int nextpid = 1;
 int monopolize_set = 0;
-
-extern uint ticks;
 extern void forkret(void);
 extern void trapret(void);
 
@@ -41,6 +35,10 @@ void
 pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+  acquire(&ptable.lock);
+  q = mlfq_init();
+  MoQ = queue_init(MoQ, MoQ_level);
+  release(&ptable.lock);
 }
 
 // Must be called with interrupts disabled
@@ -95,24 +93,18 @@ allocproc(void)
 
   acquire(&ptable.lock);
 
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == UNUSED)
       goto found;
-    if(p->state == RUNNABLE && p->tick == 0) {
-        mlfq_push(ptable.mlfq, p, L0);
-    }
-  }
+
   release(&ptable.lock);
   return 0;
 
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-
-  //add for tick, priority, level.
+  p->priority = 10;
   p->tick = 0;
-  p->priority = 0;
-  p->level = L0;
 
   release(&ptable.lock);
 
@@ -174,6 +166,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
+  mlfq_push(q, p, L0);
 
   release(&ptable.lock);
 }
@@ -240,6 +233,7 @@ fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  mlfq_push(q, np, L0);
 
   release(&ptable.lock);
 
@@ -357,45 +351,36 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-
+    
     if(ticks == 100) {
-      mlfq_boost(ptable.mlfq);
+      mlfq_boost(q);
     }
 
-    if(monopolize_set == 0) p = mlfq_pop(ptable.mlfq);
-    else {
-
-    }
-
-    if(p->state == RUNNABLE) {
-    // for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    //   if(p->state != RUNNABLE)
-    //     continue;
+    p = mlfq_pop(q);
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+    c->proc = p;
+    switchuvm(p);
+    p->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
-      c->proc = 0;
-
-    }
-
+    c->proc = 0;
+    
     ++p->tick;
-    if(p->tick >= ptable.mlfq->queue[p->level]->time_quantuam) {
-      down_queue(ptable.mlfq, p->level);
+    if(p->tick > q->queue[p->level]->time_quantuam) {
+      down_queue(q, p->level);
+      p->tick = 0;
     }
+    if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
 
-    //yield() => p->state == RUNNABLE;
-    mlfq_push(ptable.mlfq, p, p->level);
     release(&ptable.lock);
+
   }
 }
 
@@ -421,8 +406,49 @@ sched(void)
   if(readeflags()&FL_IF)
     panic("sched interruptible");
   intena = mycpu()->intena;
-  swtch(&p->context, mycpu()->scheduler); //context switch
+  swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
+}
+
+int getlev(void) {
+  //if(isexist(MoQ, myproc())) return 99;
+  return myproc()->level;
+}
+
+int setpriority(int pid, int priority) {
+  struct proc* p;
+  
+  if(priority > 10 || priority < 0) return -2;
+  for(int i=0; i<3; i++) {
+    p = find_process_pid(q->queue[i], pid);
+    if(p != (void*)0) break;
+  }
+  if(p != (void*)0) 
+    p->priority = priority;
+  
+  return 0;
+}
+
+int setmonopoly(int pid, int password) {
+  if(password != 2020028377) return -2;
+  
+  struct proc* p = (void*)0;
+  for(int i=0; i<3; i++) {
+    p = find_process_pid(q->queue[i], pid);
+    if(p != (void*)0) break;
+  }
+  if(p == (void*)0) find_process_pid(q->priority_queue, pid);
+  if(p == (void*)0) return -1;
+  
+  return MoQ->size;
+}
+
+void monopolize() {
+  monopolize_set = 1;
+}
+
+void unmonopolize() {
+  monopolize_set = 0;
 }
 
 // Give up the CPU for one scheduling round.
@@ -431,43 +457,8 @@ yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->state = RUNNABLE;
-  // if(myproc()->tick < ptable.mlfq->queue[L0]->time_quantuam) {
-  //   mlfq_push(ptable.mlfq, myproc(), L0);
-  // }
   sched();
   release(&ptable.lock);
-}
-
-//
-int getlev(void) {
-  return myproc()->level;
-}
-
-int setpriority(int pid, int priority) {
-  struct proc* p = (void*)0;
-  for(int i=0; i<3; i++) {
-    p = find_process_pid(ptable.mlfq->queue[i], pid);
-    if(p != (void*)0) break;
-  }
-  if(p == (void*)0) return -1;
-  
-  p->priority = priority;
-  if(priority > 10 || priority < 0) return -2;
-  
-  return 0;
-}
-
-// int setmonopoly(int pid, int passwaord) {
-
-// }
-
-void monopolize() {
-  monopolize_set = 1;
-}
-
-void unmonopolize() {
-  monopolize_set = 0;
-  ticks = 0;
 }
 
 // A fork child's very first scheduling by scheduler()

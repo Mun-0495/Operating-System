@@ -13,6 +13,7 @@ extern uint ticks;
 queue* queue_init(struct queue* q, int level) {
     queue* init_queue = (struct queue*)kalloc();
     init_queue->time_quantuam = 2 * (level+1);
+    if(level == 99) init_queue->time_quantuam = 99;
     init_queue->front = init_queue->rear = (void*)0;
     init_queue->size = 0;
 
@@ -20,37 +21,44 @@ queue* queue_init(struct queue* q, int level) {
     return q;
 }
 
+int isexist(queue* q, struct proc* p) {
+    struct proc* find;
+    for(find = q->front; find != q->rear; find = find->next) {
+        if(find == p) return 1;
+    }
+    if(find == p) return 1;
+    return 0;
+}
+
 int isempty(queue* q) {
-    if(q->front == (void*)0)
+    if(q->size == 0)
         return 1;
     return 0;
 }
 
-// struct proc* front(queue* q) {
-//     return q->front;
-// }
+struct proc* front(queue* q) {
+    return q->front;
+}
 
-// struct proc* find_previous_process(queue* q, struct proc* p) {
-//     struct proc* prev = q->front;
-//     struct proc* curr = q->front->next;
+struct proc* find_previous_process(queue* q, struct proc* p) {
+    struct proc* prev = q->front;
+    struct proc* curr;
+    for(curr = q->front->next; curr != q->front; curr = curr->next) {
+        if(curr == p) break;
+        prev = prev->next;
+    }
+    if(curr != p) return (void*)0;
 
-//     while(curr != p) {
-//         prev = curr;
-//         curr = curr->next;
-//     }
-
-//     return prev;
-// }
+    return prev;
+}
 
 struct proc* find_process(queue* q, struct proc* p) {
-    struct proc* curr = q->front;
-    struct proc* next = q->front->next;
-
-    while(curr != p) {
-        curr = next;
-        next = next->next;
+    struct proc* curr;
+    for(curr = q->front; curr != q->rear; curr = curr->next) {
+        if(curr == p) break;
     }
-
+    if(curr != p) return (void*)0;
+    
     return curr;
 }
 
@@ -73,8 +81,9 @@ struct proc* pop(queue* q) {
 }
 
 void push(queue* q, struct proc* p) {
-    q->size++;
+
     p->level = (q->time_quantuam) / 2 - 1;
+    if(q->time_quantuam == 99) p->level = 99;
     if (isempty(q)) {
         q->front = q->rear = p;
         p->next = p;
@@ -82,6 +91,7 @@ void push(queue* q, struct proc* p) {
     }
     q->rear->next = p;
     q->rear = p;
+    q->size++;
     
     //process now in queue->rear. process->next is q->front
     //link them.
@@ -115,14 +125,15 @@ int process_exists(queue* q, struct proc* p) {
     return 0;
 }
 
-void clear(struct queue* q, struct proc* p) {
-    q->front = q->rear = (void*)0;
-    q->size = 0;
-}
+struct proc* pop_targetproc(queue* q, struct proc* p) {
+    struct proc* find = find_previous_process(q, p);
+    
+    if(find == (void*)0) return find;
+    
+    find->next = find->next->next;
+    q->size--;
 
-void set_clear(struct queue* q) {
-    q->front = q->rear = (void*)0;
-    q->size = 0;
+    return find;
 }
 
 /**
