@@ -35,63 +35,24 @@ void mlfq_push(struct mlfq* mlfq, struct proc* proc, int n) {
 }
 
 struct proc* mlfq_pop(struct mlfq* mlfq) {
-    struct proc* p;
+    int flag = 0;
+    struct proc* p = front(mlfq->queue[L0]);
 
-    // //L0 RR
-    // while(cnt < mlfq->queue[L0]->size) {
-    //   p = pop(mlfq->queue[L0]);
-    //   if(p->state == RUNNABLE) break;
-    //   push(mlfq->queue[L0], p);
-    //   cnt++;
-    // }
-    
-    // //L1 RR
-    // cnt = 0;
-    // while(cnt < mlfq->queue[L1]->size) {
-    //   p = pop(mlfq->queue[L1]);
-    //   if(p->state == RUNNABLE) break;
-    //   push(mlfq->queue[L1], p);
-    //   cnt++;
-    // }
-
-    // //L2 RR
-    // cnt = 0;
-    // while(cnt < mlfq->queue[L2]->size) {
-    //   p = pop(mlfq->queue[L0]);
-    //   if(p->state == RUNNABLE) break;
-    //   push(mlfq->queue[L0], p);
-    //   cnt++;
-    // }
-
-    // //L3 RR
-    // cnt = 0;
-    // while(cnt < mlfq->priority_queue->size) {
-    //   p = top_pri_proc(mlfq->priority_queue);
-    //   if(p -> state == RUNNABLE) break;
-    //   push(mlfq->priority_queue, p);
-    //   cnt++;
-    // }
-    if(!isempty(mlfq->queue[L0])) {
-      p = pop(mlfq->queue[L0]);
-      return p;
+    //L0 RR
+    for(int i=0; i<3; i++) {
+      if(mlfq->queue[i]->size > 0) {
+        p = pop(mlfq->queue[i]);
+        flag = 1;
+        break;
+      }
+    }
+    if(!flag) {
+      if(mlfq->priority_queue->size > 0) {
+        p = pop(mlfq->priority_queue);
+      }
     }
 
-    else if(!isempty(mlfq->queue[L1])) {
-      p = pop(mlfq->queue[L1]);
-      return p;
-    }
-
-    else if(!isempty(mlfq->queue[L2])) {
-      p = pop(mlfq->queue[L2]);
-      return p;
-    }
-
-    else if(!isempty(mlfq->priority_queue)) {
-      p = top_pri_proc(mlfq->priority_queue);
-      return p;
-    }
-
-    return (void*)0;
+    return p;
 }
 
 void mlfq_boost(struct mlfq* mlfq) {
@@ -101,10 +62,10 @@ void mlfq_boost(struct mlfq* mlfq) {
   }
   mlfq->queue[L0]->rear->tick = 0;
   
-  cprintf("L0 size : %d\n", mlfq->queue[L0]->size);
-  cprintf("L1 size : %d\n", mlfq->queue[L1]->size);
-  cprintf("L2 size : %d\n", mlfq->queue[L2]->size);
-  cprintf("L3 size : %d\n", mlfq->priority_queue->size);
+  // cprintf("L0 size : %d\n", mlfq->queue[L0]->size);
+  // cprintf("L1 size : %d\n", mlfq->queue[L1]->size);
+  // cprintf("L2 size : %d\n", mlfq->queue[L2]->size);
+  // cprintf("L3 size : %d\n", mlfq->priority_queue->size);
   
   for(int i=1; i<3; i++) {
       while(!isempty(mlfq->queue[i])) {
@@ -122,4 +83,22 @@ void mlfq_boost(struct mlfq* mlfq) {
       push(mlfq->queue[L0], proc);
   }
   
+}
+
+void queue_down(mlfq* q, struct proc* p) {
+  if(p->level == L0) {
+    if(p->pid % 2 == 1) {
+      mlfq_push(q, p, L1);
+    }
+    else if(p->pid % 2 == 0) {
+      mlfq_push(q, p, L2);
+    }
+  }
+  else if(p->level == L1 || p->level == L2) {
+    mlfq_push(q, p, L3);
+  }
+  else {
+    if(p->priority > 0) p->priority--;
+    mlfq_push(q, p, L3);
+  }
 }

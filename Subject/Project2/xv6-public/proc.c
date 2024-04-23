@@ -106,6 +106,7 @@ found:
   p->pid = nextpid++;
   p->priority = 0;
   p->tick = 0;
+  p->level = L0;
 
   release(&ptable.lock);
 
@@ -383,14 +384,14 @@ scheduler(void)
       }
 
       p = mlfq_pop(q);
-      if(p == (void*)0) {
-        release(&ptable.lock);
-        continue;
-      }
-      cprintf("%d\n", p);
+      // if(p == (void*)0) {
+      //   release(&ptable.lock);
+      //   continue;
+      // }
+      //cprintf("%d\n", p);
       //cprintf("now process level : %d\n", p->level);
       if(p->state == RUNNABLE) { 
-        cprintf("%d\n", p->pid);    
+        //cprintf("%d\n", p->pid);    
         // Switch to chosen process.  It is the process's job
         // to release ptable.lock and then reacquire it
         // before jumping back to us.
@@ -407,34 +408,14 @@ scheduler(void)
       }
       
       p->tick++;
-      if(p->tick >= q->queue[p->level]->time_quantuam) {
+      if(p->tick > q->queue[p->level]->time_quantuam) {
         p->tick = 0;
         flag = 1;
+        queue_down(q, p);
       }
 
       if(!flag) {
         if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
-      }
-
-      if(flag) {
-        if(p->level == L0) {
-          if(p->pid % 2 == 1) {
-            p->level = L1;
-            if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
-          }
-          else {
-            p->level = L2;
-            if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
-          }
-        }
-        else if(p->level == L1 || p->level == L2) {
-          p->level = L3;
-          if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
-        }
-        else {
-          if(p->priority > 0) p->priority--;
-          if(p->state == RUNNABLE || p->state == SLEEPING) mlfq_push(q, p, p->level);
-        }
       }
     }
     release(&ptable.lock);
@@ -489,14 +470,19 @@ int setpriority(int pid, int priority) {
 int setmonopoly(int pid, int password) {
   if(password != 2020028377) return -2;
   
-  struct proc* p = (void*)0;
+  struct proc* p = 0;
   for(int i=0; i<3; i++) {
-    p = find_process_pid(q->queue[i], pid);
-    if(p != (void*)0) break;
+    p = pop_targetproc(q->queue[i], pid);
+    if(p != 0) {
+      break;
+    }
   }
-  if(p == (void*)0) find_process_pid(q->priority_queue, pid);
-  if(p == (void*)0) return -1;
+  if(p == 0) {
+    p = pop_targetproc(q->priority_queue, pid);
+  }
   
+  if(p == 0) return -1;
+
   return MoQ->size;
 }
 

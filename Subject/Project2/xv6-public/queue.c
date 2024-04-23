@@ -40,6 +40,10 @@ struct proc* front(queue* q) {
     return q->front;
 }
 
+struct proc* rear(queue* q) {
+    return q->rear;
+}
+
 struct proc* find_previous_process(queue* q, struct proc* p) {
     struct proc* prev = q->front;
     struct proc* curr;
@@ -47,7 +51,7 @@ struct proc* find_previous_process(queue* q, struct proc* p) {
         if(curr == p) break;
         prev = prev->next;
     }
-    if(curr != p) return (void*)0;
+    if(curr != p) return 0;
 
     return prev;
 }
@@ -57,7 +61,7 @@ struct proc* find_process(queue* q, struct proc* p) {
     for(curr = q->front; curr != q->rear; curr = curr->next) {
         if(curr == p) break;
     }
-    if(curr != p) return (void*)0;
+    if(curr != p) return 0;
     
     return curr;
 }
@@ -69,7 +73,7 @@ struct proc* find_process_pid(queue* q, int pid) {
     }
     if(p->pid == pid) return p;
     
-    return (void*)0;
+    return 0;
 }
 
 struct proc* pop(queue* q) {
@@ -93,12 +97,11 @@ void push(queue* q, struct proc* p) {
     }
     q->rear->next = p;
     q->rear = p;
+    q->rear->next = q->front;
     q->size++;
     
     //process now in queue->rear. process->next is q->front
     //link them.
-    p->next = q->front; 
-
     return;
 }
 
@@ -127,12 +130,14 @@ int process_exists(queue* q, struct proc* p) {
     return 0;
 }
 
-struct proc* pop_targetproc(queue* q, struct proc* p) {
-    struct proc* find = find_previous_process(q, p);
+struct proc* pop_targetproc(queue* q, int pid) {
+    struct proc* find = find_process_pid(q, pid);
+    if(find == 0) return 0;
     
-    if(find == (void*)0) return find;
+    struct proc* prev = find_previous_process(q, find);
     
-    find->next = find->next->next;
+
+    prev->next = find->next;
     q->size--;
 
     return find;
@@ -144,17 +149,20 @@ struct proc* pop_targetproc(queue* q, struct proc* p) {
  * @return [struct proc*] First element of current priority queue.
  */
 struct proc* top_pri_proc(queue* pq) {
-    struct proc* ret = (void*)0;
+    struct proc* curr = front(pq);
+    struct proc* prev = rear(pq);
+
     for (int pri = 10; pri >= 0; pri--) {
-        struct proc* p = front(pq);
         while (1) {
-            if (p->priority == pri) {
-                ret = p;
-                return ret;
+            if (curr->priority == pri) {
+                prev->next = curr->next;
+                pq->size--;
+                return curr;
             }
-            p = p->next;
-            if (p == front(pq)) break;
+            prev = curr;
+            curr = curr->next;
+            if(curr == front(pq)) break;
         }
     }
-    return (void*)0;
+    return 0;
 }

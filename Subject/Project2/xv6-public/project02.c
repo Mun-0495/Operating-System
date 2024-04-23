@@ -87,7 +87,6 @@ int main(int argc, char *argv[])
 
   printf(1, "[Test 1] default\n");
   pid = fork_children();
-
   if (pid != parent)
   {
     for (i = 0; i < NUM_LOOP; i++)
@@ -95,10 +94,10 @@ int main(int argc, char *argv[])
       int x = getlev();
       if (x < 0 || x > 3)
       {
-	if(x != 99){
+        if(x != 99){
           printf(1, "Wrong level: %d\n", x);
           exit();
-	} 
+        } 
       }
       if(x == 99) count[4]++;
       else count[x]++;

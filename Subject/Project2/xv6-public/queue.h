@@ -7,6 +7,8 @@ typedef struct queue {
     int size;
 } queue;
 
+struct proc* front(queue* q);
+
 struct queue* queue_init(queue* q, int level);
 
 int isempty(queue* q);
@@ -16,6 +18,8 @@ struct proc* pop(queue* q);
 void push(queue* q, struct proc* p);
 
 void clear(struct queue* q, struct proc* p);
+
+struct proc* pop_targetproc(queue* q, int pid);
 
 struct proc* top_pri_proc(queue* pq);
 
