@@ -378,10 +378,6 @@ scheduler(void)
     
     else {
       flag = 0;
-      if(ticks >= 100) {
-        mlfq_boost(q);
-        ticks = 0;
-      }
 
       p = mlfq_pop(q);
       // if(p == (void*)0) {
@@ -435,6 +431,14 @@ sched(void)
   int intena;
   struct proc *p = myproc();
 
+  if(ticks >= 100) {
+    acquire(&tickslock);
+    mlfq_boost(q);
+    ticks = 0;
+    // yield();
+    // release(&ptable.lock);
+    release(&tickslock);
+  }
   if(!holding(&ptable.lock))
     panic("sched ptable.lock");
   if(mycpu()->ncli != 1)
