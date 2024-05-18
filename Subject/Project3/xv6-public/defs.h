@@ -125,7 +125,7 @@ void            yield(void);
 int             thread_create(thread_t* thread, void* (*start_routine)(void*), void* arg);           
 void            thread_exit(void* retval);
 int             thread_join(thread_t thread, void** retval);
-void            killAllFromThread(struct proc *p);
+void            killallthread(struct proc *p);
 void            thread_swap(struct proc* curproc);
 
 // swtch.S

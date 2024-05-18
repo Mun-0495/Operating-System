@@ -20,7 +20,7 @@ exec(char *path, char **argv)
   struct proc *curproc = myproc();
   
   thread_swap(curproc);
-  killAllFromThread(curproc);
+  killallthread(curproc);
   begin_op();
 
   if((ip = namei(path)) == 0){

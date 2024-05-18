@@ -178,7 +178,7 @@ growproc(int n)
   }
   curproc->sz = sz;
 
-  //sz propagation
+  //sz must be share
   struct proc* p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     //same set of Thread.
@@ -252,13 +252,6 @@ exit(void)
   if(curproc == initproc)
     panic("init exiting");
 
-  //When Process meet exit.
-  //kill same set of Thread.
-  //if curproc is thread -> kill.
-  //swapping thread if thread child
-  //and kill.  
-  thread_swap(curproc);
-  killAllFromThread(curproc);
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -267,6 +260,13 @@ exit(void)
       curproc->ofile[fd] = 0;
     }
   }
+  //When Process meet exit.
+  //kill same set of Thread.
+  //if curproc is thread -> kill.
+  //swapping thread if thread child
+  //and kill.  
+  thread_swap(curproc);
+  killallthread(curproc);
   
   begin_op();
   iput(curproc->cwd);
@@ -593,8 +593,7 @@ int thread_create(thread_t* thread, void* (*start_routine)(void*), void* arg) {
 
   //share pgdir.
   np->pgdir = curproc->pgdir;
-  curproc->sz = PGROUNDUP(curproc->sz);
-
+  
   if((curproc->sz = allocuvm(np->pgdir, curproc->sz, curproc->sz + 2*PGSIZE)) == 0)
     return -1;
 
@@ -630,7 +629,7 @@ int thread_create(thread_t* thread, void* (*start_routine)(void*), void* arg) {
   // Copy len bytes from p to user address va in page table pgdir.
   // Most useful when pgdir is not the current page table.
   // uva2ka ensures this only works for PTE_U pages.
-  //fatal copyout error and copyout stack.
+  // fatal copyout error and copyout stack.
   if(copyout(np->pgdir, sp, ustack, 16) < 0)
     return -1;
 
@@ -683,7 +682,7 @@ void thread_exit(void* retval) {
   struct proc *p;
   int fd;
 
-  // why error?
+  // it is not process
   // if(curproc == initproc)
   //   panic("init exiting");
   
@@ -721,6 +720,7 @@ void thread_exit(void* retval) {
   panic("zombie exit");
 }
 
+
 int thread_join(thread_t thread, void** retval) {
   //from wait.
   struct proc *p;
@@ -756,7 +756,7 @@ int thread_join(thread_t thread, void** retval) {
         
         //add retval.
         *retval = p->retval;
-        
+
         release(&ptable.lock);
         return 0;
       }
@@ -793,7 +793,7 @@ void thread_swap(struct proc* curproc) {
   release(&ptable.lock);
 }
 
-void killAllFromThread(struct proc* curproc){
+void killallthread(struct proc* curproc){
   acquire(&ptable.lock);
   struct proc* p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
