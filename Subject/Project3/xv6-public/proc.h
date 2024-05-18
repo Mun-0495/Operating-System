@@ -54,8 +54,6 @@ struct proc {
   thread_t tid;
   thread_t nexttid;
   int is_thread;
-  int has_thread;
-  int Numthread;
   void * retval;
   struct proc* creator;
 };
