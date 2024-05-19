@@ -1,5 +1,5 @@
 #set page(numbering: "1")
-#set text(font: "AppleGothic", size: 10pt)
+
 = Project02 Scheduler.
 
 #v(0.5cm)
