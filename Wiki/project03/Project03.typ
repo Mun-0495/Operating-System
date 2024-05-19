@@ -17,6 +17,8 @@
 
 = Project03 LWP and Locking.
 
+#v(0.5cm)
+#v(0.5cm)
 == 1. Design.
   - LWP에 대한 디자인입니다.
   - Pthread에 대한 기본적인 이해와 구조를 설명하고 있습니다.
@@ -26,11 +28,13 @@
 == 2. Implement.
   - 구현 설명입니다.
   - 명세에 설명한 API를 어떻게 구현했는지에 대한 설명이 담겨있습니다.
+  - locking 구현이 담겨 있습니다.
 #v(0.5cm)
 
 == 3. Result.
   - 결과 단계입니다.
   - 테스트 결과 및 실행 방법에 대한 설명을 담고 있습니다.
+  - locking 결과를 담고 있습니다.
 #v(0.5cm)
 
 == 4. Trouble Shooting.
@@ -130,7 +134,46 @@
     - 지정한 스레드가 종료되길 기다리고, 스레드가 ```c thread_exit()```함수를 통해 반환한 값을 받아온다고 합니다.
     - 스레드가 종료된 후, 스레드에 할당된 자원들을 회수하고 정리해야하니, 기존의 ```c wait()```함수와 매우 닮아 있습니다.
     - wait을 이용하여 구현하면 될 듯 합니다.
-  
+
+#pagebreak()
+
+  - 다음으로 locking 입니다.
+    - locking의 경우, 기존의 구현된 함수가 아닌 직접 구현인데, n개의 쓰레드에 대해 race condition을 막아야 합니다.
+    - 이를 위해 조사해보니, n개의 쓰레드의 상호배제를 위한 Lamport's bakery algorithm이 있는 것을 알 수 있었습니다.
+    - 쓰레드가 들어가기 위한 번호표를 부여하고, 번호표를 받은 순서대로 들어갈 수 있는 n개의 상호배제에 대한 알고리즘이 바로 램포트의 빵집 알고리즘입니다.
+    - 이 구현을 우리의 명세에 맞게 고치기 위해선 먼저 기존 코드를 뜯어볼 필요가 있습니다.
+    - 기본적인 Lamport bakery algorithm은 다음과 같습니다.
+    #mybox(
+      ```C
+      while(1) {              // 프로세스i의 진입 영역
+        choosing[i] = ture;   // 번호표 받을 준비
+        // (번호표 부여중 선점이 되어 같은 번호를 부여 받는 프로세스가 발생할 수 있음)
+        number[i] = max(number[0], number[1], ..., number[n-1]) + 1;  // 번호표 부여 
+        chossing[i] = false;  // 번호표를 받음
+
+        for (j = 0; j < n; j++) { // 모드 프로세스와 번호표를 비교함.
+          while (choosing[j]);    // 프로세스j가 번호표를 받을 때까지 대기
+
+          // 프로세스 j가 프로세스 i보다 번호표가 작거나(우선순위가 높고)
+          // 또는 번호표가 같을 경우 j 가 i 보다 작다면 
+          // 프로세스 j가 임계구역에서 나올 때까지 대기.
+          while ((number[j] != 0) &&    
+                ((number[j] < number[i])               
+                || (number[j] == number[i] && j < i)));     
+        }
+
+
+        // Critical Section
+        number[i] = 0;  // 임계구역 사용완료를 알림.
+      }
+      ```
+    )
+    - 이 구현을 우리의 lock과 unlock에 맞게 고치기 위해선 기존 함수의 추가와 더불어 수정이 필요합니다.
+    - 기존 함수에서 lock과 unlock을 수정해주어야 합니다.
+    - 빵집 알고리즘에서 쓰이는 choosing, number배열이 필요할 듯 합니다.
+    - 또, 번호표를 뽑아야하니, thread의 id 값이 필요합니다.
+    - 그에 맞게 수정하면 결과가 나올 듯 합니다.
+  #v(0.5cm)
   - 이제 어느정도 디자인을 생각해 두었으니, 실제로 구현을 해보겠습니다.
 
 #pagebreak()
@@ -577,6 +620,67 @@
   )
 
 #pagebreak()
+  
+  - 다음으로 Locking 입니다.
+  - Locking의 경우 먼저 Lamport의 알고리즘을 적용해봅시다.
+  
+  - 이를 명세에 맞게 고쳐봅시다.
+    - 먼저 choosing과 number가 필요합니다.
+    #mybox(
+      ```c
+      int choosing[NUM_THREADS]; //번호표를 받을 준비.
+      int number[NUM_THREADS]; //번호표 부여.
+      ```
+    )
+    - 다음으로 번호표를 부여할 thread의 id인 tid를 추가해 봅시다.
+    #mybox(
+      ```c
+      int tids[NUM_THREADS];
+      for (int i = 0; i < NUM_THREADS; i++) {
+        tids[i] = i;
+        ...
+      }
+      ```
+    )
+    - 번호표를 부여했다면, 이제 Lock과 unlock만 구현하면 됩니다.
+    - 특정 쓰레드가 번호표를 받을 준비를 하고, 번호표 중 가장 높은 값을 미리 선점해줍니다.
+    - 이때, 번호가 낮을수록 우선순위는 높아집니다.
+    #mybox(
+      ```C
+      void lock(int tid) {
+        choosing[tid] = 1; //특정 쓰레드가 번호표 받을 준비중.
+        ...
+        number[tid] = max + 1;
+        choosing[tid] = 0;
+      }
+      ```
+    )
+    - 이제 알고리즘을 그대로 적용하면 됩니다.
+    #mybox(
+      ```C
+      void lock(int tid) {
+        ...
+        for(int i=0; i< NUM_THREADS; i++) {
+          ...
+          while(choosing[i]) {}
+          while (number[i] != 0 && 
+                (number[i] < number[tid] || (number[i] == number[tid] && i < tid))) {}
+        }
+      }
+      ```
+    )
+    - unlock의 경우 이제 부여한 번호를 초기화 시킵니다.
+    #mybox(
+      ```c
+      void unlock(int tid) {
+        number[tid] = 0;
+      }
+      ```
+    )
+    - 이때, busy waiting이 발생할 수 있습니다.
+    - 또 thread의 수가 많아지면 급격히 느려집니다.
+
+#pagebreak()
 
 == 3. Result.
   - 차례대로 실행해줍시다.
@@ -593,6 +697,11 @@
   #image("./img/thread_exit.png", width: 70%)
   #image("./img/thread_test.png")
 
+  - 다음으론 Locking 결과입니다. 적절히 NUM_ITERS와 NUM_THREADS의 수를 변형시켜 결과를 나타내었습니다.
+  #image("./img/lock_2.png")
+  
+  - 상호배제가 잘 되었는지 중간에 printf문을 넣어서도 확인하였습니다.
+  #image("./img/lock_3.png")
 #pagebreak()
 
 == 4. Trouble Shooting.
@@ -679,3 +788,5 @@
     if(p->is_thread && (p->parent == curproc->parent))
     ```
   )
+  - Lock의 경우 Thread가 비정상적으로 많아지면 segfault가 뜨며 shared_resource값이 제대로 찍히지 않는 오류가 발생했습니다.
+  - 너무 많은 수의 쓰레드 때문이라고 추측됩니다. 
