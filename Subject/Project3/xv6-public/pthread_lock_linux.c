@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#define NUM_ITERS 10000
-#define NUM_THREADS 100
+#define NUM_ITERS 100
+#define NUM_THREADS 10
 
 int shared_resource = 0;
-int choosing[NUM_THREADS];
-int number[NUM_THREADS];
+int choosing[NUM_THREADS]; //번호표를 받을 준비.
+int number[NUM_THREADS]; //번호표 부여.
 
 void lock(int tid) {
-    choosing[tid] = 1;
+    choosing[tid] = 1; //특정 쓰레드가 번호표 받을 준비중.
 
     // Find the maximum ticket number
     int max = 0;
@@ -46,12 +46,13 @@ void* thread_func(void* arg) {
     int tid = *(int*)arg;
 
     lock(tid);
-
+    //printf("lock %d\t", tid);
     for (int i = 0; i < NUM_ITERS; i++) {
         shared_resource++;
     }
 
     unlock(tid);
+    //printf("unlock %d\n", tid);
 
     pthread_exit(NULL);
 }
